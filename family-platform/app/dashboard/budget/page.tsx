@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Transaction, TransactionInsert } from "@/lib/types";
+import { getTransactions, createTransaction, deleteTransaction } from "@/lib/api-client";
 import BalanceSummary from "@/components/budget/BalanceSummary";
 import TransactionForm from "@/components/budget/TransactionForm";
 import TransactionList from "@/components/budget/TransactionList";
@@ -41,9 +42,7 @@ export default function BudgetPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/transactions?month=${month}`);
-      if (!res.ok) throw new Error("Failed to load transactions.");
-      const data = await res.json();
+      const data = await getTransactions(month);
       setTransactions(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -57,18 +56,12 @@ export default function BudgetPage() {
   }, [fetchTransactions]);
 
   async function handleAdd(tx: TransactionInsert) {
-    const res = await fetch("/api/transactions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(tx),
-    });
-    if (!res.ok) throw new Error("Failed to add transaction.");
+    await createTransaction(tx);
     await fetchTransactions();
   }
 
   async function handleDelete(id: string) {
-    const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete transaction.");
+    await deleteTransaction(id);
     await fetchTransactions();
   }
 
@@ -76,7 +69,6 @@ export default function BudgetPage() {
 
   return (
     <div className="px-8 py-8 max-w-4xl mx-auto">
-      {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Budget & Finance</h1>
@@ -85,7 +77,6 @@ export default function BudgetPage() {
         <TransactionForm onAdd={handleAdd} />
       </div>
 
-      {/* Month navigator */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={() => setMonth(getPrevMonth(month))}

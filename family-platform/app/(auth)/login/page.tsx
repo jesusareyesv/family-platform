@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { apiLogin, apiRegister } from "@/lib/api-client";
+import { setToken } from "@/lib/token";
 import Button from "@/components/ui/Button";
 
 export default function LoginPage() {
@@ -17,35 +18,35 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
-    const supabase = createClient();
 
-    if (mode === "sign_in") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setMessage({ type: "error", text: error.message });
-      } else {
+    try {
+      if (mode === "sign_in") {
+        const token = await apiLogin(email, password);
+        setToken(token);
         router.push("/dashboard");
         router.refresh();
-      }
-    } else {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        setMessage({ type: "error", text: error.message });
       } else {
-        setMessage({
-          type: "success",
-          text: "Account created! Check your email to confirm your address, then sign in.",
-        });
+        const result = await apiRegister(email, password);
+        if (result.access_token) {
+          setToken(result.access_token);
+          router.push("/dashboard");
+        } else {
+          setMessage({
+            type: "success",
+            text: result.message ?? "Account created! Check your email to confirm, then sign in.",
+          });
+        }
       }
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Something went wrong." });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Logo / Title */}
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">🏡</div>
           <h1 className="text-3xl font-bold text-gray-800">Family Platform</h1>
@@ -124,9 +125,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
-          Just for us 🐱🐱🐱🐱
-        </p>
+        <p className="text-center text-xs text-gray-400 mt-6">Just for us 🐱🐱🐱🐱</p>
       </div>
     </div>
   );
