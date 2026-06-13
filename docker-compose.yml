@@ -1,0 +1,13 @@
+services:
+  api:
+    build: ./api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app          # hot-reload source changes
+      - ./data:/app/data    # persist SQLite database across restarts
+    environment:
+      DATABASE_URL: sqlite:///./data/family.db
+      AUTH_MODE: local
+      JWT_SECRET: dev-secret-do-not-use-in-production
+      CORS_ORIGINS_STR: http://localhost:3000
